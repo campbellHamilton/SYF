@@ -1,0 +1,1705 @@
+#include "Fizzle/Fizzle.h"
+#include "Menu.h"
+#include <iostream>
+#include <math.h>
+#include <numeric>
+#include <ctime>
+#include "store.h"
+#include "modifierlist.h"
+
+bool playAgain();
+controller p(0);//the controller for player 1. its the first controller plugged in.
+int Menu::game()
+{
+	if (frame > 60)
+		frame = 0;
+	frame++;
+	int deathCount = 0;
+	animation = 0;
+	FzlSetFrameRate(59);
+	int shouldClose = 0;//controls when the game is left.
+	deathCount = playerAmnt - 1;
+	//up
+
+	//  << arena->p_1.playerNumber->getLeftStick().x << "               ";
+	//  << arena->p_1.playerNumber->getLeftStick().y << std::endl;
+	tankCollision(playerAmnt);
+
+
+	//if (FzlGetKey(FzlKeyP) && movement < 4)//used to cycle the movement scheme
+	//{
+	//	movement++;
+	//	wait(1);
+	//}
+	//if (FzlGetKey(FzlKeyO) && movement > 0)//used to cycle the movement scheme
+	//{
+	//	wait(1);
+	//	movement--;
+	//}
+	if (FzlGetKey(FzlKeyI))
+	{
+		arena->flipbounceToggle();
+	}
+	if (FzlGetKey(FzlKeyO))
+	{
+		arena->flipasteroidsToggle();
+	}
+
+
+
+	int temp = 0;
+	if (arena->death[0] == true)
+		temp++;
+	if (arena->death[1] == true)
+		temp++;
+	if (arena->death[2] == true)
+		temp++;
+	if (arena->death[3] == true)
+		temp++;
+
+	if (temp >= 3)
+	{
+		shouldClose = true;
+	}
+
+
+
+	if (shouldClose > 0)//controls the game over screen
+	{
+		FzlSpriteHandle winScreen;
+		int temp;
+		if (arena->death[0] == false)
+		{
+			winScreen = FzlLoadSprite("Assets/Menus/Player_1_Wins.png", 1920, 1080);
+			printf("created sprite: %d%s", winScreen, "\n");
+			temp = 1;
+		}
+		if (arena->death[1] == false)
+		{
+			winScreen = FzlLoadSprite("Assets/Menus/Player_2_Wins.png", 1920, 1080);
+			printf("created sprite: %d%s", winScreen, "\n");
+			temp = 2;
+		}
+		if (arena->death[2] == false)
+		{
+			winScreen = FzlLoadSprite("Assets/Menus/Player_3_Wins.png", 1920, 1080);
+			printf("created sprite: %d%s", winScreen, "\n");
+			temp = 3;
+		}
+		if (arena->death[3] == false)
+		{
+			winScreen = FzlLoadSprite("Assets/Menus/Player_4_Wins.png", 1920, 1080);
+			printf("created sprite: %d%s", winScreen, "\n");
+			temp = 4;
+		}
+		FzlSwapBuffers();
+		FzlDrawSprite(winScreen, 960, 540, 0);
+
+		FzlSwapBuffers();//used to load new frame.
+		printf("deleted sprite: %d%s", winScreen, "\n");
+		FzlDeleteSprite(winScreen);
+
+		wait(1);
+		shouldClose = 0;
+		return temp;
+	}
+	return 0;
+
+
+}
+
+void Menu::normalShot()
+{
+	framestart = clock();
+	arena->playersShoot(inversion);
+	arena->getCollision(); // detects whether a player is hit by a bullet.
+	switch (playerAmnt)
+	{
+	case 4:
+		if (arena->death[3] == false)
+		{
+			if (selection.modifiers[modifierlist::shield] == true)
+			{
+				arena->p_4.shielded();
+			}
+			if (selection.modifiers[modifierlist::dash] == true)
+			{
+				arena->p_4.dashed();
+			}
+			moveTank(&arena->p_4, getframetimeEstimate(), arena);
+		}
+	case 3:
+		if (arena->death[2] == false)
+		{
+			if (selection.modifiers[modifierlist::shield] == true)
+			{
+				arena->p_3.shielded();
+			}
+			if (selection.modifiers[modifierlist::dash] == true)
+			{
+				arena->p_3.dashed();
+			}
+			moveTank(&arena->p_3, getframetimeEstimate(), arena);
+		}
+	case 2:
+		if (arena->death[1] == false)
+		{
+			if (selection.modifiers[modifierlist::dash] == true)
+			{
+				arena->p_2.dashed();
+			}
+			if (selection.modifiers[modifierlist::shield] == true)
+			{
+				arena->p_2.shielded();
+			}
+			moveTank(&arena->p_2, getframetimeEstimate(), arena);
+		}
+		if (arena->death[0] == false)
+		{
+			if (selection.modifiers[modifierlist::dash] == true)
+			{
+				arena->p_1.dashed();
+			}
+			if (selection.modifiers[modifierlist::shield] == true)
+			{
+				arena->p_1.shielded();
+			}
+			moveTank(&arena->p_1, getframetimeEstimate(), arena);
+		}
+		else
+		{
+
+		}
+		break;
+
+	}
+	arena->getBulletCollsion();
+}
+
+void Menu::lazerShot()
+{
+	arena->playersShoot(inversion);
+	arena->getBulletCollsion();
+	arena->getCollision(); // detects whether a player is hit by a bullet.
+	switch (playerAmnt)
+	{
+	case 4:
+		if (arena->death[3] == false)
+		{
+			moveTank(&arena->p_4, getframetimeEstimate(), arena);
+		}
+	case 3:
+		if (arena->death[2] == false)
+		{
+			moveTank(&arena->p_3, getframetimeEstimate(), arena);
+		}
+	case 2:
+		if (arena->death[1] == false)
+		{
+			moveTank(&arena->p_2, getframetimeEstimate(), arena);
+		}
+		if (arena->death[0] == false)
+		{
+			moveTank(&arena->p_1, getframetimeEstimate(), arena);
+		}
+		break;
+
+	}
+
+
+}
+
+int Menu::mainMenu()
+{
+	int pos = 1;
+	float x;
+	float y;
+
+	FzlSwapBuffers();
+	//	while (p.conButton(XINPUT_GAMEPAD_A) == true) {}
+	int counter = 0;
+	while (true)
+	{
+
+		x = p.getLeftStick().x;
+		y = p.getLeftStick().y;
+		//wait(0.2);
+		if (y < -0.2 && counter < 3 || p.conButton(XINPUT_GAMEPAD_DPAD_DOWN) == true)
+		{
+			counter++;
+			wait(0.25);
+		}
+		else if (y > 0.2 && counter > 0 || p.conButton(XINPUT_GAMEPAD_DPAD_UP) == true)
+		{
+			counter--;
+			wait(0.25);
+		}
+		if (counter == 0)
+		{
+			FzlDrawSprite(menu1, 960, 540, 0);
+			FzlSwapBuffers();
+		}
+		else if (counter == 1)
+		{
+			FzlDrawSprite(menu2, 960, 540, 0);
+			FzlSwapBuffers();
+		}
+		else if (counter == 2)
+		{
+			FzlDrawSprite(menu3, 960, 540, 0);
+			FzlSwapBuffers();
+		}
+		else
+		{
+			FzlDrawSprite(menu4, 960, 540, 0);
+			FzlSwapBuffers();
+		}
+		if (p.conButton(XINPUT_GAMEPAD_A))
+		{
+			wait(0.25);
+			return counter;
+		}
+
+	}
+	return 0;
+}
+
+bool playAgain()//controls whether a new game is played or not
+{
+	while (1)
+	{
+		if (p.conButton(XINPUT_GAMEPAD_A) == true)
+		{
+			return false;
+		}
+		else if (p.conButton(XINPUT_GAMEPAD_B) == true)
+		{
+			return true;
+		}
+	}
+}
+
+void Menu::wait()
+{
+	int count = 0;
+	double time = FzlGetDeltaTime();
+	while (time > 0.0000000000016)
+	{
+		count++;
+		time = FzlGetDeltaTime();
+	}
+}
+void Menu::wait(double x)//used to wait a variable amount of time
+{
+	double time = FzlGetTimeSinceStart();
+	double wait = 0.0;
+	while (time - wait > -x)
+	{
+		wait = FzlGetTimeSinceStart();
+	}
+}
+
+void Menu::moveTank(Tank *tank, double time, World* world)
+{
+	tank->setDirection();
+	tank->turretMovement(inversion);  //used to rotate turret
+	tank->movement(movement, time, world, &layers);//used to to move tank
+	tank->rotation(movement);//used to rotate tank (only for tank controls)
+
+
+}
+
+void Menu::direction(Tank *move, int player)
+{
+	int frameSpeed = 60;
+	int multiply = 3;
+
+	if (move->dir == 0 || move->dir == 1)
+	{
+		multiply *= -1;
+	}
+
+	if (move->dir == 0 || move->dir == 2)
+		frameSpeed = 30 - move->getvelocityX() * multiply;
+	else if (move->dir == 1 || move->dir == 3)
+		frameSpeed = 30 - move->getvelocityY() * multiply;
+	if (frameSpeed > 30)
+	{
+		frameSpeed = 6;
+	}
+	else if (frameSpeed > 20)
+	{
+		frameSpeed = 5;
+	}
+	else if (frameSpeed > 15)
+	{
+		frameSpeed = 4;
+	}
+	else
+	{
+		frameSpeed = 3;
+	}
+	if (move->dir == 5)
+	{
+		frameSpeed = 15;
+	}
+
+
+	if (frame % frameSpeed == 0)
+	{
+		if (move->dir == 1)
+		{
+			if (move->spriteSpot < 3)
+			{
+				move->spriteSpot++;
+			}
+			else
+			{
+				move->spriteSpot = 0;
+			}
+		}
+		else if (move->dir == 3)
+		{
+			if (move->spriteSpot > 4)
+				move->spriteSpot = 3;
+			else if (move->spriteSpot > 0)
+			{
+				move->spriteSpot--;
+			}
+			else
+			{
+				move->spriteSpot = 3;
+			}
+		}
+		else if (move->dir == 0)
+		{
+			if (move->spriteSpot > 10)
+				move->spriteSpot = 5;
+			else if (move->spriteSpot < 4)
+				move->spriteSpot = 5;
+			else if (move->spriteSpot < 10) // 5 - 10
+				move->spriteSpot++;
+			else
+				move->spriteSpot = 5;
+		}
+		else if (move->dir == 2)
+		{
+			if (move->spriteSpot > 10)
+			{
+				move->spriteSpot = 10;
+			}
+			else if (move->spriteSpot > 5) // 5 - 10
+				move->spriteSpot--;
+			else
+				move->spriteSpot = 10;
+		}
+		else if (move->dir == 5)
+		{
+			if (move->spriteSpot == 12)
+				move->spriteSpot = 13;
+			else
+				move->spriteSpot = 12; // 12 and 13
+		}
+
+	}
+	//down
+
+	if (move->getAT() > -112.5 && move->getAT() < -67.5)
+	{
+		move->spriteSpot2 = 0;
+		layers.push_back(move->staticTank, static_cast<float>(move->getX()), static_cast<float>(move->getY()), 0, move->spriteSpot, move->spriteSpot2);
+		//FzlDrawAnimatedSprite(move->staticTank, move->spriteSpot, 0, static_cast<float>(move->getX()), static_cast<float>(move->getY()), 0);//sets the tanks position and rotation
+	}
+	//down right
+	else if (move->getAT() > -67.5 && move->getAT() < -22.5)
+	{
+		move->spriteSpot2 = 1;
+		layers.push_back(move->staticTank, static_cast<float>(move->getX()), static_cast<float>(move->getY()), 0, move->spriteSpot, move->spriteSpot2);
+		//	FzlDrawAnimatedSprite(move->staticTank, move->spriteSpot, 1, static_cast<float>(move->getX()), static_cast<float>(move->getY()), 0);//sets the tanks position and rotation
+	}
+
+	//right
+	else if (move->getAT() > -22.5 && move->getAT() < 22.5)
+	{
+		move->spriteSpot2 = 2;
+		layers.push_back(move->staticTank, static_cast<float>(move->getX()), static_cast<float>(move->getY()), 0, move->spriteSpot, move->spriteSpot2);
+		//FzlDrawAnimatedSprite(move->staticTank, move->spriteSpot, 2, static_cast<float>(move->getX()), static_cast<float>(move->getY()), 0);//sets the tanks position and rotation
+	}
+
+	//up right
+	else if (move->getAT() > 22.5 && move->getAT() < 67.5)
+	{
+		move->spriteSpot2 = 3;
+		layers.push_back(move->staticTank, static_cast<float>(move->getX()), static_cast<float>(move->getY()), 0, move->spriteSpot, move->spriteSpot2);
+		//FzlDrawAnimatedSprite(move->staticTank, move->spriteSpot, 3, static_cast<float>(move->getX()), static_cast<float>(move->getY()), 0);//sets the tanks position and rotation
+	}
+
+	//up
+	else if (move->getAT() < 112.5 && move->getAT() > 67.5)
+	{
+		move->spriteSpot2 = 4;
+		layers.push_back(move->staticTank, static_cast<float>(move->getX()), static_cast<float>(move->getY()), 0, move->spriteSpot, move->spriteSpot2);
+		//FzlDrawAnimatedSprite(move->staticTank, move->spriteSpot, 4, static_cast<float>(move->getX()), static_cast<float>(move->getY()), 0);
+	}
+
+	//up left
+	else if (move->getAT() > 112.5 && move->getAT() < 157.5)
+	{
+		move->spriteSpot2 = 5;
+		layers.push_back(move->staticTank, static_cast<float>(move->getX()), static_cast<float>(move->getY()), 0, move->spriteSpot, move->spriteSpot2);
+		//FzlDrawAnimatedSprite(move->staticTank, move->spriteSpot, 5, static_cast<float>(move->getX()), static_cast<float>(move->getY()), 0);//sets the tanks position and rotation
+	}
+
+	//left
+	else if (move->getAT() > 157.5 || move->getAT() < -157.5)
+	{
+		move->spriteSpot2 = 6;
+		layers.push_back(move->staticTank, static_cast<float>(move->getX()), static_cast<float>(move->getY()), 0, move->spriteSpot, move->spriteSpot2);
+		//FzlDrawAnimatedSprite(move->staticTank, move->spriteSpot, 6, static_cast<float>(move->getX()), static_cast<float>(move->getY()), 0);//sets the tanks position and rotation
+	}
+
+	//down left
+	else if (move->getAT() > -157.5 && move->getAT() < -112.5)
+	{
+		move->spriteSpot2 = 7;
+		layers.push_back(move->staticTank, static_cast<float>(move->getX()), static_cast<float>(move->getY()), 0, move->spriteSpot, move->spriteSpot2);
+		//FzlDrawAnimatedSprite(move->staticTank, move->spriteSpot, 7, static_cast<float>(move->getX()), static_cast<float>(move->getY()), 0);//sets the tanks position and rotation
+	}
+	if (move->shieldOn == true)
+	{
+		layers.push_back(move->bubble, static_cast<float>(move->getX()), static_cast<float>(move->getY()), 0, -1, -1);
+	}
+}
+
+void Menu::setGameMode()
+{
+	FzlSpriteHandle bomb = FzlLoadSprite("Assets/Menus/gamemode/Bomb Mode.png", 1920, 1080);
+	printf("created sprite: %d%s", bomb, "\n");
+	FzlSpriteHandle heart = FzlLoadSprite("Assets/Menus/gamemode/Heart Mode.png", 1920, 1080);
+	printf("created sprite: %d%s", heart, "\n");
+	FzlSpriteHandle oneshot = FzlLoadSprite("Assets/Menus/gamemode/One Shot Mode.png", 1920, 1080);
+	printf("created sprite: %d%s", oneshot, "\n");
+	FzlSpriteHandle stock = FzlLoadSprite("Assets/Menus/gamemode/Stock Mode.png", 1920, 1080);
+	printf("created sprite: %d%s", stock, "\n");
+	FzlSpriteHandle standard = FzlLoadSprite("Assets/Menus/gamemode/Standard.png", 1920, 1080);
+	printf("created sprite: %d%s", standard, "\n");
+	FzlSpriteHandle tutorial = FzlLoadSprite("Assets/tutorials/Controls.png", 1920, 1080);
+	printf("created sprite: %d%s", tutorial, "\n");
+	bool tutlock = false;
+
+	int x = 0;
+	int y = 0;
+	int count = 0;
+	bool done = false;
+
+	while (done == false)
+	{
+		if (!tutlock)
+		{
+
+			float temp = p.getLeftStick().x;
+			if (p.getLeftStick().x > .3)
+			{
+				if (x < 2)
+					x++;
+				wait(0.25);
+			}
+			else if (p.getLeftStick().x < -.3)
+			{
+				if (x > 0)
+					x--;
+				wait(0.25);
+			}
+			else if (p.getLeftStick().y > .3)
+			{
+				if (y == 1)
+					y = 0;
+				wait(0.25);
+			}
+			else if (p.getLeftStick().y < -.3)
+			{
+				if (y == 0)
+					y = 1;
+				wait(0.25);
+			}
+		}
+		switch (x)
+		{
+		case 0:
+			FzlDrawSprite(standard, 960, 540, 0);
+			//	FzlSwapBuffers();
+			break;
+		case 1:
+			if (y == 0)
+			{
+				FzlDrawSprite(bomb, 960, 540, 0);
+
+				//	FzlSwapBuffers();
+
+			}
+			else
+			{
+				FzlDrawSprite(heart, 960, 540, 0);
+
+				//	FzlSwapBuffers();
+			}
+			break;
+		case 2:
+			if (y == 0)
+			{
+				FzlDrawSprite(stock, 960, 540, 0);
+
+				//	FzlSwapBuffers();
+			}
+			else
+			{
+				FzlDrawSprite(oneshot, 960, 540, 0);
+
+				//	FzlSwapBuffers();
+			}
+			break;
+
+		}
+		if (!tutlock)
+		{
+			if (p.conButton(XINPUT_GAMEPAD_A) == true)
+			{
+				switch (x)
+				{
+
+				case 0: //standard
+					break;
+				case 1: //bomb/heart
+					if (y == 0)
+						selection.modifiers[modifierlist::index::bomb] = true;
+					else
+						selection.modifiers[modifierlist::index::hearts] = true;
+					break;
+				case 2: //stock/oneshot
+					if (y == 0)
+						selection.modifiers[modifierlist::index::stock] = true;
+					else
+						selection.modifiers[modifierlist::index::oneshot] = true;
+					break;
+
+				}
+				wait(0.25);
+				done = true;
+
+			}
+
+			if (p.conButton(XINPUT_GAMEPAD_Y) == true)
+			{
+				tutlock = true;
+				switch (x)
+				{
+
+				case 0: //standard
+					tutorial = FzlLoadSprite("Assets/tutorials/Tutorial_Standard.png", 1920, 1080);
+					break;
+				case 1: //bomb/heart
+					if (y == 0)
+						tutorial = FzlLoadSprite("Assets/tutorials/Tutorial_Bomb.png", 1920, 1080);
+					else
+						tutorial = FzlLoadSprite("Assets/tutorials/Tutorial_Hearts.png", 1920, 1080);
+					break;
+				case 2: //stock/oneshot
+					if (y == 0)
+						tutorial = FzlLoadSprite("Assets/tutorials/Tutorial_Stock.png", 1920, 1080);
+					else
+						tutorial = FzlLoadSprite("Assets/tutorials/Tutorial_One_Shot.png", 1920, 1080);
+					break;
+
+				}
+				wait(0.25);
+
+
+			}
+		}
+		if (tutlock)
+		{
+			FzlDrawSprite(tutorial, 960, 540, 0);
+			//	FzlSwapBuffers();
+			if (p.conButton(XINPUT_GAMEPAD_B) == true)
+				tutlock = false;
+		}
+		FzlSwapBuffers();
+	}
+
+	printf("deleted sprite: %d%s", bomb, "\n");
+	FzlDeleteSprite(bomb);
+	printf("deleted sprite: %d%s", heart, "\n");
+	FzlDeleteSprite(heart);
+	printf("deleted sprite: %d%s", oneshot, "\n");
+	FzlDeleteSprite(oneshot);
+	printf("deleted sprite: %d%s", stock, "\n");
+	FzlDeleteSprite(stock);
+	printf("deleted sprite: %d%s", standard, "\n");
+	FzlDeleteSprite(standard);
+	printf("deleted sprite: %d%s", tutorial, "\n");
+	FzlDeleteSprite(tutorial);
+
+
+
+}
+
+
+void Menu::setPlayerAmnt()
+{
+	FzlSpriteHandle menu1 = FzlLoadSprite("Assets/Menus/2_Players.png", 1920, 1080);
+	printf("created sprite: %d%s", menu1, "\n");
+	FzlSpriteHandle menu3 = FzlLoadSprite("Assets/Menus/3_Players.png", 1920, 1080);
+	printf("created sprite: %d%s", menu3, "\n");
+	FzlSpriteHandle menu4 = FzlLoadSprite("Assets/Menus/4_Players.png", 1920, 1080);
+	printf("created sprite: %d%s", menu4, "\n");
+
+	int x = 0;
+	int count = 0;
+	bool done = false;
+	while (done == false)
+	{
+		float temp = p.getLeftStick().x;
+		if (p.getLeftStick().x > 0)
+		{
+			if (x < 2)
+				x++;
+			wait(0.25);
+		}
+		else if (p.getLeftStick().x < 0)
+		{
+			if (x > 0)
+				x--;
+			wait(0.25);
+		}
+
+
+		switch (x)
+		{
+		case 0:
+			FzlDrawSprite(menu1, 960, 540, 0);
+			FzlSwapBuffers();
+			break;
+		case 1:
+			FzlDrawSprite(menu3, 960, 540, 0);
+			FzlSwapBuffers();
+			break;
+		case 2:
+			FzlDrawSprite(menu4, 960, 540, 0);
+			FzlSwapBuffers();
+			break;
+		}
+
+		if (p.conButton(XINPUT_GAMEPAD_A) == true)
+		{
+			done = true;
+			if (x == 0)
+			{
+				printf("deleted sprite: %d%s", menu1, "\n");
+				FzlDeleteSprite(menu1);
+				printf("deleted sprite: %d%s", menu3, "\n");
+				FzlDeleteSprite(menu3);
+				printf("deleted sprite: %d%s", menu4, "\n");
+				FzlDeleteSprite(menu4);
+				//	wait(0.5);
+				GUI = FzlLoadSprite("Assets/GUI/2_Player.png", 1920, 1080);
+				playerAmnt = 2;
+			}
+			else if (x == 1)
+			{
+				printf("deleted sprite: %d%s", menu1, "\n");
+				FzlDeleteSprite(menu1);
+				printf("deleted sprite: %d%s", menu3, "\n");
+				FzlDeleteSprite(menu3);
+				printf("deleted sprite: %d%s", menu4, "\n");
+				FzlDeleteSprite(menu4);
+				//	wait(0.5);
+				GUI = FzlLoadSprite("Assets/GUI/3_Player.png", 1920, 1080);
+				playerAmnt = 3;
+			}
+			else if (x == 2)
+			{
+				printf("deleted sprite: %d%s", menu1, "\n");
+				FzlDeleteSprite(menu1);
+				printf("deleted sprite: %d%s", menu3, "\n");
+				FzlDeleteSprite(menu3);
+				printf("deleted sprite: %d%s", menu4, "\n");
+				FzlDeleteSprite(menu4);
+				//	wait(0.5);
+				GUI = FzlLoadSprite("Assets/GUI/4_Player.png", 1920, 1080);
+				playerAmnt = 4;
+			}
+		}
+
+	}
+	arena = new World(88, (inversion == true) ? 30 : 30, playerAmnt, selection);
+	setMap(0);
+}
+//Main Game Frame Loop Ends Here
+void timer(int&, FzlSpriteHandle);
+void Menu::setLayers()
+{
+	clock_t temp = clock();
+	arena->p_1.deathTime = clock();
+	arena->p_2.deathTime = clock();
+	arena->p_3.deathTime = clock();
+	arena->p_4.deathTime = clock();
+
+	FzlDrawSprite(Menu::temp, 960, 540, 0);
+	layers.push_back(map, 960, 540, 0, -1, -1);
+	switch (playerAmnt)
+	{
+	case 4:
+		if (arena->death[3] == false)
+		{
+			direction(&arena->p_4, 3);
+			arena->p_4.bulletMovement(arena->getbounceToggle(), arena->getbulletSpeed(), &layers);//moves the bullet
+			arena->p_4.deathStart = clock();
+		}
+		else if (arena->p_4.deathSpot != 8)
+		{
+			if ((arena->p_4.deathTime - arena->p_4.deathStart) > 150)
+			{
+				arena->p_4.deathStart = arena->p_4.deathTime;
+				arena->p_4.deathSpot++;
+			}
+			layers.push_back(arena->p_4.die, arena->p_4.getX(), arena->p_4.getY(), arena->p_4.getA(), arena->p_4.deathSpot, arena->p_4.spriteSpot2);
+
+		}
+	case 3:
+		if (arena->death[2] == false)
+		{
+			direction(&arena->p_3, 2);
+			arena->p_3.bulletMovement(arena->getbounceToggle(), arena->getbulletSpeed(), &layers);//moves the bullet
+			arena->p_3.deathStart = clock();
+		}
+		else if (arena->p_3.deathSpot != 8)
+		{
+			if ((arena->p_3.deathTime - arena->p_3.deathStart) > 150)
+			{
+				arena->p_3.deathStart = arena->p_3.deathTime;
+				arena->p_3.deathSpot++;
+			}
+			layers.push_back(arena->p_3.die, arena->p_3.getX(), arena->p_3.getY(), arena->p_3.getA(), arena->p_3.deathSpot, arena->p_3.spriteSpot2);
+
+		}
+	case 2:
+		if (arena->death[1] == false)
+		{
+			direction(&arena->p_2, 1);
+			arena->p_2.bulletMovement(arena->getbounceToggle(), arena->getbulletSpeed(), &layers);//moves the bullet
+			arena->p_2.deathStart = clock();
+		}
+		else if (arena->p_2.deathSpot != 8)
+		{
+			if ((arena->p_2.deathTime - arena->p_2.deathStart) > 150)
+			{
+				arena->p_2.deathStart = arena->p_2.deathTime;
+				arena->p_2.deathSpot++;
+			}
+			layers.push_back(arena->p_2.die, arena->p_2.getX(), arena->p_2.getY(), arena->p_2.getA(), arena->p_2.deathSpot, arena->p_2.spriteSpot2);
+
+		}
+		if (arena->death[0] == false)
+		{
+			direction(&arena->p_1, 0);
+			arena->p_1.bulletMovement(arena->getbounceToggle(), arena->getbulletSpeed(), &layers);//moves the bullet
+			arena->p_1.deathStart = clock();
+		}
+		else if (arena->p_1.deathSpot != 8)
+		{
+			if ((arena->p_1.deathTime - arena->p_1.deathStart) > 150)
+			{
+				arena->p_1.deathStart = arena->p_1.deathTime;
+				arena->p_1.deathSpot++;
+			}
+			layers.push_back(arena->p_1.die, arena->p_1.getX(), arena->p_1.getY(), arena->p_1.getA(), arena->p_1.deathSpot, arena->p_1.spriteSpot2);
+
+		}
+		break;
+
+	}
+	double deltat = FzlGetDeltaTime();
+	arena->p_1.layering(&layers);
+	FzlDrawSprite(GUI, 960, 540, 0);
+	timer(time, numbers);
+	if ((temp - timing) / CLOCKS_PER_SEC > 0.5)
+	{
+		time--;
+		timing = temp;
+	}
+	if (selection.modifiers[modifierlist::index::deathsofthepast])
+	{
+		arena->dotphandler();
+	}
+	arena->hudhandler();
+	arena->splat.draw();
+	FzlSwapBuffers();//used to load new frame.
+	layers.clear();
+	frameend = clock();
+	double deltatclock = frameend - framestart;
+	double deltatclockseconds = deltatclock / CLOCKS_PER_SEC;
+	//if(FzlGetDeltaTime() < 0.016)
+	//	wait(0.01 - FzlGetDeltaTime());
+	addframetime((double)(deltatclockseconds));
+	//	  << 1 / getframetimeEstimate() << std::endl; 
+	//  << deltat << std::endl;
+	if (arena->drawspeedup)
+	{
+		FzlDrawSprite(arena->speedUp, 960, 540, 0);
+	}
+	arena->vibratehandler();
+
+	//end of frame
+}
+
+
+void Menu::reset()
+{
+	delete arena;
+	arena = new World(64, (inversion == true) ? 30 : 30, playerAmnt, selection);
+	setMap(0);
+}
+
+void Menu::deletion()
+{
+	delete arena;
+}
+
+int Menu::pause()
+{
+
+	int temp = 2;
+	if (arena->p_1.playerNumber->conButton(XINPUT_GAMEPAD_START) == true)
+	{
+		FzlDrawSprite(paused, 960, 540, 0);
+		FzlSwapBuffers();
+		while (temp >= 1)
+		{
+			if (arena->p_1.playerNumber->conButton(XINPUT_GAMEPAD_DPAD_LEFT) == true || arena->p_1.playerNumber->getLeftStick().x < 0)
+			{
+				FzlDrawSprite(paused, 960, 540, 0);
+				FzlSwapBuffers();
+				temp = 2;
+			}
+			else if (arena->p_1.playerNumber->conButton(XINPUT_GAMEPAD_DPAD_RIGHT) == true || arena->p_1.playerNumber->getLeftStick().x > 0)
+			{
+				FzlDrawSprite(paused2, 960, 540, 0);
+				FzlSwapBuffers();
+				temp = 1;
+			}
+			else if (arena->p_1.playerNumber->conButton(XINPUT_GAMEPAD_A) == true)
+			{
+				wait(0.5);
+				return temp;
+			}
+		}
+	}
+	else if (arena->p_2.playerNumber->conButton(XINPUT_GAMEPAD_START) == true)
+	{
+		FzlDrawSprite(paused, 960, 540, 0);
+		FzlSwapBuffers();
+		while (temp >= 1)
+		{
+			if (arena->p_2.playerNumber->conButton(XINPUT_GAMEPAD_DPAD_LEFT) == true || arena->p_2.playerNumber->getLeftStick().x < 0)
+			{
+				FzlDrawSprite(paused, 960, 540, 0);
+				FzlSwapBuffers();
+				temp = 2;
+			}
+			else if (arena->p_2.playerNumber->conButton(XINPUT_GAMEPAD_DPAD_RIGHT) == true || arena->p_2.playerNumber->getLeftStick().x > 0)
+			{
+				FzlDrawSprite(paused2, 960, 540, 0);
+				FzlSwapBuffers();
+				temp = 1;
+			}
+			else if (arena->p_2.playerNumber->conButton(XINPUT_GAMEPAD_A) == true)
+			{
+				wait(0.5);
+				return temp;
+			}
+		}
+	}
+	else if (arena->p_3.playerNumber->conButton(XINPUT_GAMEPAD_START) == true)
+	{
+		FzlDrawSprite(paused, 960, 540, 0);
+		FzlSwapBuffers();
+		while (temp >= 1)
+		{
+			if (arena->p_3.playerNumber->conButton(XINPUT_GAMEPAD_DPAD_LEFT) == true || arena->p_3.playerNumber->getLeftStick().x < 0)
+			{
+				FzlDrawSprite(paused, 960, 540, 0);
+				FzlSwapBuffers();
+				temp = 2;
+			}
+			else if (arena->p_3.playerNumber->conButton(XINPUT_GAMEPAD_DPAD_RIGHT) == true || arena->p_3.playerNumber->getLeftStick().x > 0)
+			{
+				FzlDrawSprite(paused2, 960, 540, 0);
+				FzlSwapBuffers();
+				temp = 1;
+			}
+			else if (arena->p_3.playerNumber->conButton(XINPUT_GAMEPAD_A) == true)
+			{
+				//wait(0.5);
+				return temp;
+			}
+		}
+	}
+	else if (arena->p_4.playerNumber->conButton(XINPUT_GAMEPAD_START) == true)
+	{
+		FzlDrawSprite(paused, 960, 540, 0);
+		FzlSwapBuffers();
+		while (temp >= 1)
+		{
+			if (arena->p_4.playerNumber->conButton(XINPUT_GAMEPAD_DPAD_LEFT) == true || arena->p_4.playerNumber->getLeftStick().x < 0)
+			{
+				FzlDrawSprite(paused, 960, 540, 0);
+				FzlSwapBuffers();
+				temp = 2;
+			}
+			else if (arena->p_4.playerNumber->conButton(XINPUT_GAMEPAD_DPAD_RIGHT) == true || arena->p_4.playerNumber->getLeftStick().x > 0)
+			{
+				FzlDrawSprite(paused2, 960, 540, 0);
+				FzlSwapBuffers();
+				temp = 1;
+			}
+			else if (arena->p_4.playerNumber->conButton(XINPUT_GAMEPAD_A) == true)
+			{
+				//wait(0.5);
+				return temp;
+			}
+		}
+	}
+
+	return 0;
+}
+
+void Menu::quit()
+{
+	on = false;
+}
+
+bool Menu::getOn()
+{
+	return on;
+}
+
+bool Menu::tankAABB(Tank* _t1, Tank* _t2)
+{
+	double _t1x = _t1->getX();
+	double _t1y = _t1->getY();
+	double _t2x = _t2->getX();
+	double _t2y = _t2->getY();
+	int tankradius = 32;//ankSize / 2;
+						//AABB tests, if any of these tests are true, not colliding, return false.
+	if (_t1x - tankradius > _t2x + tankradius)
+		return false;
+	if (_t2x - tankradius > _t1x + tankradius)
+		return false;
+	if (_t1y + tankradius < _t2y - tankradius)
+		return false;
+	if (_t2y + tankradius < _t1y - tankradius)
+		return false;
+	return true;
+
+}
+
+void Menu::tankCollision(int)
+{	//If player 1 and 2 are colliding, bounce them.
+	if (tankAABB(&arena->p_1, &arena->p_2))
+	{
+		tankBounce(&arena->p_1, &arena->p_2);
+	}
+	//if the player count is more than 2, then you have to test 1 and 2 against 3
+	if (playerAmnt > 2)
+	{
+		if (arena->death[0] == false && arena->death[2] == false && tankAABB(&arena->p_1, &arena->p_3))
+		{
+			tankBounce(&arena->p_1, &arena->p_3);
+		}
+
+		if (arena->death[1] == false && arena->death[2] == false && tankAABB(&arena->p_2, &arena->p_3))
+		{
+			tankBounce(&arena->p_2, &arena->p_3);
+		}
+		//if the player count is more than 3, then you have to test 1, 2 and 3 against 4
+		if (playerAmnt > 3)
+		{
+			if (arena->death[0] == false && arena->death[3] == false && tankAABB(&arena->p_1, &arena->p_4))
+			{
+				tankBounce(&arena->p_1, &arena->p_4);
+			}
+			if (arena->death[1] == false && arena->death[3] == false && tankAABB(&arena->p_2, &arena->p_4))
+			{
+				tankBounce(&arena->p_2, &arena->p_4);
+			}
+			if (arena->death[2] == false && arena->death[3] == false && tankAABB(&arena->p_3, &arena->p_4))
+			{
+				tankBounce(&arena->p_3, &arena->p_4);
+			}
+		}
+	}
+}
+
+bool Menu::tankAABC(Tank* _t1, Tank* _t2)
+{
+	double _t1x = _t1->getX();
+	double _t1y = _t1->getY();
+	double _t2x = _t2->getX();
+	double _t2y = _t2->getY();
+	//if the radius of a player is less than the distance between the centres of the 2 players, return true.
+	if (30 < sqrt(pow(_t2x - _t1x, 2) + pow(_t2y - _t1y, 2)))
+		return true;
+	return false;
+}
+//tankBounce can be updated to take player size/mass into account if we want to do cool stuff, but that's not important right now.
+
+void Menu::tankBounce(Tank* _t1, Tank* _t2)
+{
+	if (tankAABC(_t1, _t2))
+	{
+		double _t1x = _t1->getVelocity()->getx();
+		double _t1y = _t1->getVelocity()->gety();
+		double _t2x = _t2->getVelocity()->getx();
+		double _t2y = _t2->getVelocity()->gety();
+
+		_t1->getVelocity()->setx(_t2x);
+		_t1->getVelocity()->sety(_t2y);
+		_t2->getVelocity()->setx(_t1x);
+		_t2->getVelocity()->sety(_t1y);
+
+		_t1->inertialMove();
+		_t2->inertialMove();
+		if (tankAABB(_t1, _t2))
+			_t1->inertialMove();
+		_t2->inertialMove();
+	}
+}
+
+
+
+Menu::Menu()
+{
+	timeMax = 180;
+	time = timeMax;
+	on = true;
+	inversion = false;
+	shootWait = 0;
+	movement = 5;//this controls what movement scheme where using
+				 //tankSize = 88;
+
+
+
+	staticTank2 = FzlLoadSprite("Assets/player1.png", 88, 88);//creates the tank image for second player
+
+	staticWin = FzlLoadSprite("Assets/play-again.png", 400, 300);//displays the game over png
+
+	map = FzlLoadSprite("Assets/map.png", 1920, 1080);
+
+	paused = FzlLoadSprite("Assets/Pause_Menu_Resume.png", 1920, 1080);
+	paused2 = FzlLoadSprite("Assets/Pause_Menu_Exit.png", 1920, 1080);
+
+	menu1 = FzlLoadSprite("Assets/SYF_Menu_Play.png", 1920, 1080);
+	menu2 = FzlLoadSprite("Assets/SYF_Menu_Options.png", 1920, 1080);
+	menu3 = FzlLoadSprite("Assets/SYF_Menu_Credits.png", 1920, 1080);
+	menu4 = FzlLoadSprite("Assets/SYF_Menu_Exit.png", 1920, 1080);
+	roundNum = FzlLoadSprite("Assets/characters/Round 1.png", 1920, 1080);
+	roundStarting = FzlLoadSprite("Assets/characters/Round Start.png", 1920, 1080);
+	numbers = FzlLoadSprite("Assets/characters/numbers/Numbers Row.png", 90, 90);
+
+
+	frame = 0;
+	timing = clock();
+}
+
+void Menu::setMap(int level)
+{
+	switch (level)
+	{
+	case 9000:
+		map = FzlLoadSprite("Assets/map.png", 1920, 1080);
+		temp = FzlLoadSprite("Assets/Prototype_Map_Collision_with_Background.png", 1920, 1080);
+		arena->p_1.map();
+		arena->p_2.map();
+		arena->p_3.map();
+		arena->p_4.map();
+		break;
+	case 1:
+
+		map = FzlLoadSprite("Assets/Maps/Prototype_Map_1_Top_Layer.png", 1920, 1080);
+		temp = FzlLoadSprite("Assets/Maps/Prototype_Map_1_Bottom_Layer.png", 1920, 1080);
+		arena->p_1.map2();
+		arena->p_2.map2();
+		arena->p_3.map2();
+		arena->p_4.map2();
+		break;
+	case 2:
+		if (rand() % 2 == 0)
+		{
+			map = FzlLoadSprite("Assets/Maps/Ice_Map_1_Top_Layer.png", 1920, 1080);
+			temp = FzlLoadSprite("Assets/Maps/Ice_Map_1_Bottom_Layer.png", 1920, 1080);
+			arena->p_1.map3();
+			arena->p_2.map3();
+			arena->p_3.map3();
+			arena->p_4.map3();
+		}
+		else
+		{
+			map = FzlLoadSprite("Assets/Maps/Ice_Map_2_Top_Layer.png", 1920, 1080);
+			temp = FzlLoadSprite("Assets/Maps/Ice_Map_2_Bottom_Layer.png", 1920, 1080);
+			arena->p_1.map6();
+			arena->p_2.map6();
+			arena->p_3.map6();
+			arena->p_4.map6();
+		}
+		break;
+	case 3:
+		map = FzlLoadSprite("Assets/map.png", 1920, 1080);
+		temp = FzlLoadSprite("Assets/Prototype_Map_Collision_with_Background.png", 1920, 1080);
+		arena->p_1.map();
+		arena->p_2.map();
+		arena->p_3.map();
+		arena->p_4.map();
+		break;
+	case 4:
+		map = FzlLoadSprite("Assets/Maps/Desert_Map_1_Top_Layer.png", 1920, 1080);
+		temp = FzlLoadSprite("Assets/Maps/Desert_Map_1_Bottom_Layer.png", 1920, 1080);
+		arena->p_1.map4();
+		arena->p_2.map4();
+		arena->p_3.map4();
+		arena->p_4.map4();
+		break;
+	case 5:
+		map = FzlLoadSprite("Assets/Maps/Island_Map_1_Top_Layer.png", 1920, 1080);
+		temp = FzlLoadSprite("Assets/Maps/Island_Map_1_Bottom_Layer.png", 1920, 1080);
+		arena->p_1.map5();
+		arena->p_2.map5();
+		arena->p_3.map5();
+		arena->p_4.map5();
+		break;
+	}
+	time = timeMax;
+}
+void Menu::initframetimes()
+{
+	for (int i = 0; i < 60; i++)
+	{
+		frametimes.push_back(0.01666);
+	}
+	frametimestotal = 1.0;
+}
+void Menu::addframetime(double _t)
+{
+	frametimestotal += _t;
+	frametimestotal -= frametimes[59];
+	frametimes.push_front(_t);
+	frametimes.pop_back();
+}
+
+
+int Menu::getTime()
+{
+	return time;
+}
+
+int Menu::mapSelect()
+{
+	FzlSpriteHandle map1 = FzlLoadSprite("Assets/Menus/Tutorial_Selected.png", 1920, 1080);
+	FzlSpriteHandle map2 = FzlLoadSprite("Assets/Menus/Ice_Selected.png", 1920, 1080);
+	FzlSpriteHandle map3 = FzlLoadSprite("Assets/Menus/Jungle_Selected.png", 1920, 1080);
+	FzlSpriteHandle map4 = FzlLoadSprite("Assets/Menus/Desert_Selected.png", 1920, 1080);
+	FzlSpriteHandle map5 = FzlLoadSprite("Assets/Menus/Island_Selected.png", 1920, 1080);
+
+	int count = 1;
+	while (1)
+	{
+		if (p.conButton(XINPUT_GAMEPAD_A) == 1)
+		{
+			wait(0.25);
+			setMap(count);
+			mapSelected = count;
+			return count;
+		}
+		switch (count)
+		{
+		case 1:
+			FzlDrawSprite(map1, 960, 540, 0);
+			break;
+		case 2:
+
+			FzlDrawSprite(map2, 960, 540, 0);
+
+			break;
+		case 3:
+			FzlDrawSprite(map3, 960, 540, 0);
+			break;
+		case 4:
+			FzlDrawSprite(map4, 960, 540, 0);
+			break;
+		case 5:
+			FzlDrawSprite(map5, 960, 540, 0);
+			break;
+
+		}
+		if ((p.getLeftStick().x > 0 || p.conButton(XINPUT_GAMEPAD_DPAD_RIGHT) == 1) && count < 5)
+		{
+			count++;
+			wait(0.25);
+		}
+		else if ((p.getLeftStick().x < 0 || p.conButton(XINPUT_GAMEPAD_DPAD_LEFT) == 1) && count > 1)
+		{
+			count--;
+			wait(0.25);
+		}
+		FzlSwapBuffers();
+	}
+	return 0;
+}
+
+void Menu::rounds(int round)
+{
+	initilizeModifiers();
+	bool loop = true;
+	int count = 0;
+	time_t temp;
+	while (loop == true)
+	{
+		temp = clock();
+		if ((temp - timing) / CLOCKS_PER_SEC > 0.5 && count < 3)
+		{
+			timing = temp;
+			FzlDrawAnimatedSprite(numbers, 0, 3 - count, 960, 540, 0);
+			FzlSwapBuffers();
+			count++;
+
+		}
+		if ((temp - timing) / CLOCKS_PER_SEC > 0.5 && count == 3)
+		{
+			timing = temp;
+			FzlDrawSprite(roundStarting, 980, 540, 0);
+			arena->p_1.setHealth(-1);
+			arena->p_2.setHealth(-1);
+			arena->p_3.setHealth(-1);
+			arena->p_4.setHealth(-1);
+			FzlSwapBuffers();
+			loop = false;
+			while ((temp - timing) / CLOCKS_PER_SEC < 0.5) { temp = clock(); }
+		}
+	}
+	arena->p_1.timeWillTell = clock();
+	arena->p_2.timeWillTell = clock();
+	arena->p_3.timeWillTell = clock();
+	arena->p_4.timeWillTell = clock();
+
+}
+//Modifier Menu
+void Menu::modifiers()
+{
+	FzlSpriteHandle modifiermenubase = FzlLoadSprite("Assets/modifiers/Modifier Menu Base.png", 1920, 1080);
+	FzlSpriteHandle continuehighlight = FzlLoadSprite("Assets/modifiers/Continue Selected.png", 1920, 1080);
+	FzlSpriteHandle menuhighlight = FzlLoadSprite("Assets/modifiers/Modifier Menu Highlight.png", 1920, 1080);
+	FzlSpriteHandle menuselect = FzlLoadSprite("Assets/modifiers/Modifier Menu Select.png", 1920, 1080);
+	FzlSpriteHandle menutext = FzlLoadSprite("Assets/modifiers/Modifier Menu Text.png", 1920, 1080);
+	int posX = 0;
+	int posY = 2;
+	bool set = true;
+	store highlights;
+	while (set == true)
+	{
+
+		if (p.getLeftStick().x < -0.5 && posX > 0)
+		{
+			posX--;
+			wait(0.15);
+		}
+		else if (p.getLeftStick().x > 0.5 && posX < 3)
+		{
+			posX++;
+			wait(0.15);
+		}
+		if (p.getLeftStick().y < -0.5 && posY > 0)
+		{
+			posY--;
+			wait(0.15);
+		}
+		else if (p.getLeftStick().y > 0.5 && posY < 2)
+		{
+			posY++;
+			wait(0.15);
+		}
+		if (p.conButton(XINPUT_GAMEPAD_A) == 1)
+		{
+			wait(0.15);
+			if (posX == 4)
+			{
+				set = false;
+			}
+			sprite result(960 + (573 * posX), 38 + (251 * posY), 0, menuhighlight);
+			if (highlights.remove(result))
+		}
+
+
+		FzlDrawSprite(modifiermenubase, 960, 540, 0);
+
+		if (posX < 3)
+		{
+			FzlDrawSprite(menuselect, 960 + (573 * posX), 38 + (251 * posY), 0);
+		}
+		else
+		{
+			FzlDrawSprite(continuehighlight, 960, 540, 0);
+		}
+		highlights.draw();
+		FzlDrawSprite(menutext, 960, 540, 0);
+		FzlSwapBuffers();
+
+
+	}
+	initilizeModifiers();
+	arena->p_1.setHealth(-1);//set health acording to wheter lives are on.
+	arena->p_2.setHealth(-1);//set health acording to wheter lives are on.
+	arena->p_3.setHealth(-1);//set health acording to wheter lives are on.
+	arena->p_4.setHealth(-1);//set health acording to wheter lives are on.
+
+	printf("deleted sprite: %d%s", modifiermenubase, "\n");
+	FzlDeleteSprite(modifiermenubase);
+	printf("deleted sprite: %d%s", continuehighlight, "\n");
+	FzlDeleteSprite(continuehighlight);
+	printf("deleted sprite: %d%s", menuhighlight, "\n");
+	FzlDeleteSprite(menuhighlight);
+	printf("deleted sprite: %d%s", menuselect, "\n");
+	FzlDeleteSprite(menuselect);
+	printf("deleted sprite: %d%s", menutext, "\n");
+	FzlDeleteSprite(menutext);
+}
+
+void Menu::initilizeModifiers()
+{
+	bool heart = Menu::selection.modifiers[modifierlist::index::hearts];
+	bool dash = Menu::selection.modifiers[modifierlist::index::dash];
+	bool shield = Menu::selection.modifiers[modifierlist::index::shield];
+	if (!heart)
+	{
+		if (!dash)
+		{
+			if (!shield)
+			{
+				//none
+				arena->p1elim = FzlLoadSprite("Assets/HUD/eliminated/Player_1_Eliminated.png", 1920, 1080);
+				arena->p2elim = FzlLoadSprite("Assets/HUD/eliminated/Player_2_Eliminated.png", 1920, 1080);
+				arena->p3elim = FzlLoadSprite("Assets/HUD/eliminated/Player_3_Eliminated.png", 1920, 1080);
+				arena->p4elim = FzlLoadSprite("Assets/HUD/eliminated/Player_4_Eliminated.png", 1920, 1080);
+			}
+			else
+			{
+				//S
+				switch (playerAmnt)
+				{
+				case 2:
+					GUI = FzlLoadSprite("Assets/HUD/Shield CD HUD/2 Player Shield.png", 1920, 1080);
+					break;
+				case 3:
+					GUI = FzlLoadSprite("Assets/HUD/Shield CD HUD/3 Player Shield.png", 1920, 1080);
+					break;
+				case 4:
+					GUI = FzlLoadSprite("Assets/HUD/Shield CD HUD/4 Player Shield.png", 1920, 1080);
+					break;
+				}
+				arena->p1s = FzlLoadSprite("Assets/HUD/Shield CD HUD/Player 1 CD.png", 1920, 1080);
+				arena->p2s = FzlLoadSprite("Assets/HUD/Shield CD HUD/Player 2 CD.png", 1920, 1080);
+				arena->p3s = FzlLoadSprite("Assets/HUD/Shield CD HUD/Player 3 CD.png", 1920, 1080);
+				arena->p4s = FzlLoadSprite("Assets/HUD/Shield CD HUD/Player 4 CD.png", 1920, 1080);
+				arena->p1elim = FzlLoadSprite("Assets/HUD/eliminated/Eliminated Shield/Player 1 Eliminated Shield.png", 1920, 1080);
+				arena->p2elim = FzlLoadSprite("Assets/HUD/eliminated/Eliminated Shield/Player 2 Eliminated Shield.png", 1920, 1080);
+				arena->p3elim = FzlLoadSprite("Assets/HUD/eliminated/Eliminated Shield/Player 3 Eliminated Shield.png", 1920, 1080);
+				arena->p4elim = FzlLoadSprite("Assets/HUD/eliminated/Eliminated Shield/Player 4 Eliminated Shield.png", 1920, 1080);
+
+			}
+		}
+		else
+		{
+			if (!shield)
+			{
+				//D
+				switch (playerAmnt)
+				{
+				case 2:
+					GUI = FzlLoadSprite("Assets/Hud/Dash Mode Hud/2 Player Dash.png", 1920, 1080);
+					break;
+				case 3:
+					GUI = FzlLoadSprite("Assets/Hud/Dash Mode Hud/3 Player Dash.png", 1920, 1080);
+					break;
+				case 4:
+					GUI = FzlLoadSprite("Assets/Hud/Dash Mode Hud/4 Player Dash.png", 1920, 1080);
+					break;
+				}
+				arena->p1d = FzlLoadSprite("Assets/HUD/Dash Mode HUD/Player 1 Dash CD.png", 1920, 1080);
+				arena->p2d = FzlLoadSprite("Assets/HUD/Dash Mode HUD/Player 2 Dash CD.png", 1920, 1080);
+				arena->p3d = FzlLoadSprite("Assets/HUD/Dash Mode HUD/Player 3 Dash CD.png", 1920, 1080);
+				arena->p4d = FzlLoadSprite("Assets/HUD/Dash Mode HUD/Player 4 Dash CD.png", 1920, 1080);
+				arena->p1elim = FzlLoadSprite("Assets/HUD/eliminated/Eliminated Dash/Player 1 Eliminated Dash.png", 1920, 1080);
+				arena->p2elim = FzlLoadSprite("Assets/HUD/eliminated/Eliminated Dash/Player 2 Eliminated Dash.png", 1920, 1080);
+				arena->p3elim = FzlLoadSprite("Assets/HUD/eliminated/Eliminated Dash/Player 3 Eliminated Dash.png", 1920, 1080);
+				arena->p4elim = FzlLoadSprite("Assets/HUD/eliminated/Eliminated Dash/Player 4 Eliminated Dash.png", 1920, 1080);
+			}
+			else
+			{
+				//DS
+				switch (playerAmnt)
+				{
+				case 2:
+					GUI = FzlLoadSprite("Assets/HUD/Multiple Mode HUD/Base/2 Player Multiple.png", 1920, 1080);
+					break;
+				case 3:
+					GUI = FzlLoadSprite("Assets/HUD/Multiple Mode HUD/Base/3 Player Multiple.png", 1920, 1080);
+					break;
+				case 4:
+					GUI = FzlLoadSprite("Assets/HUD/Multiple Mode HUD/Base/4 Player Multiple.png", 1920, 1080);
+					break;
+				}
+				arena->p1s = FzlLoadSprite("Assets/HUD/Multiple Mode HUD/Shield/Shield CD/Player 1 DS Shield CD.png", 1920, 1080);
+				arena->p1d = FzlLoadSprite("Assets/HUD/Multiple Mode HUD/Dash/Dash CD/Player 1 DS Dash CD.png", 1920, 1080);
+				arena->p2s = FzlLoadSprite("Assets/HUD/Multiple Mode HUD/Shield/Shield CD/Player 2 DS Shield CD.png", 1920, 1080);
+				arena->p2d = FzlLoadSprite("Assets/HUD/Multiple Mode HUD/Dash/Dash CD/Player 2 DS Dash CD.png", 1920, 1080);
+				arena->p3s = FzlLoadSprite("Assets/HUD/Multiple Mode HUD/Shield/Shield CD/Player 3 DS Shield CD.png", 1920, 1080);
+				arena->p3d = FzlLoadSprite("Assets/HUD/Multiple Mode HUD/Dash/Dash CD/Player 3 DS Dash CD.png", 1920, 1080);
+				arena->p4s = FzlLoadSprite("Assets/HUD/Multiple Mode HUD/Shield/Shield CD/Player 4 DS Shield CD.png", 1920, 1080);
+				arena->p4d = FzlLoadSprite("Assets/HUD/Multiple Mode HUD/Dash/Dash CD/Player 4 DS Dash CD.png", 1920, 1080);
+				arena->p1elim = FzlLoadSprite("Assets/HUD/eliminated/Eliminated Everything/Player 1 Eliminated.png", 1920, 1080);
+				arena->p2elim = FzlLoadSprite("Assets/HUD/eliminated/Eliminated Everything/Player 2 Eliminated.png", 1920, 1080);
+				arena->p3elim = FzlLoadSprite("Assets/HUD/eliminated/Eliminated Everything/Player 3 Eliminated.png", 1920, 1080);
+				arena->p4elim = FzlLoadSprite("Assets/HUD/eliminated/Eliminated Everything/Player 4 Eliminated.png", 1920, 1080);
+
+
+			}
+		}
+		arena->p1 = FzlLoadSprite("Assets/HUD/Player 1 Overlay.png", 1920, 1080);
+		arena->p2 = FzlLoadSprite("Assets/HUD/Player 2 Overlay.png", 1920, 1080);
+		arena->p3 = FzlLoadSprite("Assets/HUD/Player 3 Overlay.png", 1920, 1080);
+		arena->p4 = FzlLoadSprite("Assets/HUD/Player 4 Overlay.png", 1920, 1080);
+
+
+	}
+	else
+	{
+		if (!dash)
+		{
+			if (!shield)
+			{
+				//H
+				switch (playerAmnt)
+				{
+				case 2:
+					GUI = FzlLoadSprite("Assets/Hud/Heart_Mode/Just_Hearts/2_Player_Heart.png", 1920, 1080);
+					break;
+				case 3:
+					GUI = FzlLoadSprite("Assets/Hud/Heart_Mode/Just_Hearts/3_Player_Heart.png", 1920, 1080);
+					break;
+				case 4:
+					GUI = FzlLoadSprite("Assets/Hud/Heart_Mode/Just_Hearts/4_Player_Heart.png", 1920, 1080);
+					break;
+
+				}
+				arena->p11 = FzlLoadSprite("Assets/HUD/Heart_Mode/Just_Hearts/Player_1_Heart_1.png", 1920, 1080);
+				arena->p21 = FzlLoadSprite("Assets/HUD/Heart_Mode/Just_Hearts/Player_2_Heart_1.png", 1920, 1080);
+				arena->p31 = FzlLoadSprite("Assets/HUD/Heart_Mode/Just_Hearts/Player_3_Heart_1.png", 1920, 1080);
+				arena->p41 = FzlLoadSprite("Assets/HUD/Heart_Mode/Just_Hearts/Player_4_Heart_1.png", 1920, 1080);
+				arena->p10 = FzlLoadSprite("Assets/HUD/Heart_Mode/Just_Hearts/Player_1_Heart_0.png", 1920, 1080);
+				arena->p20 = FzlLoadSprite("Assets/HUD/Heart_Mode/Just_Hearts/Player_2_Heart_0.png", 1920, 1080);
+				arena->p30 = FzlLoadSprite("Assets/HUD/Heart_Mode/Just_Hearts/Player_3_Heart_0.png", 1920, 1080);
+				arena->p40 = FzlLoadSprite("Assets/HUD/Heart_Mode/Just_Hearts/Player_4_Heart_0.png", 1920, 1080);
+				arena->p1elim = FzlLoadSprite("Assets/HUD/eliminated/Eliminated Just Hearts/Player 1 Eliminated Heart.png", 1920, 1080);
+				arena->p2elim = FzlLoadSprite("Assets/HUD/eliminated/Eliminated Just Hearts/Player 2 Eliminated Heart.png", 1920, 1080);
+				arena->p3elim = FzlLoadSprite("Assets/HUD/eliminated/Eliminated Just Hearts/Player 3 Eliminated Heart.png", 1920, 1080);
+				arena->p4elim = FzlLoadSprite("Assets/HUD/eliminated/Eliminated Just Hearts/Player 4 Eliminated Heart.png", 1920, 1080);
+
+			}
+			else
+			{
+				//HS
+				switch (playerAmnt)
+				{
+				case 2:
+					GUI = FzlLoadSprite("Assets/HUD/Shield CD HUD/2 Player Shield.png", 1920, 1080);
+					break;
+				case 3:
+					GUI = FzlLoadSprite("Assets/HUD/Shield CD HUD/3 Player Shield.png", 1920, 1080);
+					break;
+				case 4:
+					GUI = FzlLoadSprite("Assets/HUD/Shield CD HUD/4 Player Shield.png", 1920, 1080);
+					break;
+				}
+				arena->p1s = FzlLoadSprite("Assets/HUD/Shield CD Hud/Player 1 CD.png", 1920, 1080);
+				arena->p2s = FzlLoadSprite("Assets/HUD/Shield CD Hud/Player 2 CD.png", 1920, 1080);
+				arena->p3s = FzlLoadSprite("Assets/HUD/Shield CD Hud/Player 3 CD.png", 1920, 1080);
+				arena->p4s = FzlLoadSprite("Assets/HUD/Shield CD Hud/Player 4 CD.png", 1920, 1080);
+				arena->p11 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/Player 1 Heart 1 Left.png", 1920, 1080);
+				arena->p21 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/Player 2 Heart 1 Left.png", 1920, 1080);
+				arena->p31 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/Player 3 Heart 1 Left.png", 1920, 1080);
+				arena->p41 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/Player 4 Heart 1 Left.png", 1920, 1080);
+				arena->p10 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/Player 1 No Hearts.png", 1920, 1080);
+				arena->p20 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/Player 2 No Hearts.png", 1920, 1080);
+				arena->p30 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/Player 3 No Hearts.png", 1920, 1080);
+				arena->p40 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/Player 4 No Hearts.png", 1920, 1080);
+				arena->mh2 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/2 Player Hearts.png", 1920, 1080);
+				arena->mh3 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/3 Player Hearts.png", 1920, 1080);
+				arena->mh4 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/4 Player Hearts.png", 1920, 1080);
+				arena->p1elim = FzlLoadSprite("Assets/HUD/eliminated/Eliminated Shield/Player 1 Eliminated Shield.png", 1920, 1080);
+				arena->p2elim = FzlLoadSprite("Assets/HUD/eliminated/Eliminated Shield/Player 2 Eliminated Shield.png", 1920, 1080);
+				arena->p3elim = FzlLoadSprite("Assets/HUD/eliminated/Eliminated Shield/Player 3 Eliminated Shield.png", 1920, 1080);
+				arena->p4elim = FzlLoadSprite("Assets/HUD/eliminated/Eliminated Shield/Player 4 Eliminated Shield.png", 1920, 1080);
+
+			}
+		}
+		else
+		{
+			if (!shield)
+			{
+				//HD
+				switch (playerAmnt)
+				{
+				case 2:
+					GUI = FzlLoadSprite("Assets/Hud/Dash Mode Hud/2 Player Dash.png", 1920, 1080);
+					break;
+				case 3:
+					GUI = FzlLoadSprite("Assets/Hud/Dash Mode Hud/3 Player Dash.png", 1920, 1080);
+					break;
+				case 4:
+					GUI = FzlLoadSprite("Assets/Hud/Dash Mode Hud/4 Player Dash.png", 1920, 1080);
+					break;
+				}
+				arena->p1d = FzlLoadSprite("Assets/HUD/Dash Mode HUD/Player 1 Dash CD.png", 1920, 1080);
+				arena->p2d = FzlLoadSprite("Assets/HUD/Dash Mode HUD/Player 2 Dash CD.png", 1920, 1080);
+				arena->p3d = FzlLoadSprite("Assets/HUD/Dash Mode HUD/Player 3 Dash CD.png", 1920, 1080);
+				arena->p4d = FzlLoadSprite("Assets/HUD/Dash Mode HUD/Player 4 Dash CD.png", 1920, 1080);
+				arena->p11 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/Player 1 Heart 1 Left.png", 1920, 1080);
+				arena->p21 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/Player 2 Heart 1 Left.png", 1920, 1080);
+				arena->p31 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/Player 3 Heart 1 Left.png", 1920, 1080);
+				arena->p41 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/Player 4 Heart 1 Left.png", 1920, 1080);
+				arena->p10 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/Player 1 No Hearts.png", 1920, 1080);
+				arena->p20 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/Player 2 No Hearts.png", 1920, 1080);
+				arena->p30 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/Player 3 No Hearts.png", 1920, 1080);
+				arena->p40 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/Player 4 No Hearts.png", 1920, 1080);
+				arena->mh2 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/2 Player Hearts.png", 1920, 1080);
+				arena->mh3 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/3 Player Hearts.png", 1920, 1080);
+				arena->mh4 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/4 Player Hearts.png", 1920, 1080);
+				arena->p1elim = FzlLoadSprite("Assets/HUD/eliminated/Eliminated Dash/Player 1 Eliminated Dash.png", 1920, 1080);
+				arena->p2elim = FzlLoadSprite("Assets/HUD/eliminated/Eliminated Dash/Player 2 Eliminated Dash.png", 1920, 1080);
+				arena->p3elim = FzlLoadSprite("Assets/HUD/eliminated/Eliminated Dash/Player 3 Eliminated Dash.png", 1920, 1080);
+				arena->p4elim = FzlLoadSprite("Assets/HUD/eliminated/Eliminated Dash/Player 4 Eliminated Dash.png", 1920, 1080);
+			}
+			else
+			{
+				//HDS
+				switch (playerAmnt)
+				{
+				case 2:
+					GUI = FzlLoadSprite("Assets/HUD/Multiple Mode HUD/Blank Base/2_Player_Multiple.png", 1920, 1080);
+					break;
+				case 3:
+					GUI = FzlLoadSprite("Assets/HUD/Multiple Mode HUD/Blank Base/3_Player_Multiple.png", 1920, 1080);
+					break;
+				case 4:
+					GUI = FzlLoadSprite("Assets/HUD/Multiple Mode HUD/Blank Base/4_Player_Multiple.png", 1920, 1080);
+					break;
+				}
+				arena->p11 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/Player 1 Heart 1 Left.png", 1920, 1080);
+				arena->p21 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/Player 2 Heart 1 Left.png", 1920, 1080);
+				arena->p31 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/Player 3 Heart 1 Left.png", 1920, 1080);
+				arena->p41 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/Player 4 Heart 1 Left.png", 1920, 1080);
+				arena->p10 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/Player 1 No Hearts.png", 1920, 1080);
+				arena->p20 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/Player 2 No Hearts.png", 1920, 1080);
+				arena->p30 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/Player 3 No Hearts.png", 1920, 1080);
+				arena->p40 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/Player 4 No Hearts.png", 1920, 1080);
+				arena->p1s = FzlLoadSprite("Assets/HUD/Multiple Mode HUD/Shield/Shield CD/Player 1 DS Shield CD.png", 1920, 1080);
+				arena->p1d = FzlLoadSprite("Assets/HUD/Multiple Mode HUD/Dash/Dash CD/Player 1 DS Dash CD.png", 1920, 1080);
+				arena->p2s = FzlLoadSprite("Assets/HUD/Multiple Mode HUD/Shield/Shield CD/Player 2 DS Shield CD.png", 1920, 1080);
+				arena->p2d = FzlLoadSprite("Assets/HUD/Multiple Mode HUD/Dash/Dash CD/Player 2 DS Dash CD.png", 1920, 1080);
+				arena->p3s = FzlLoadSprite("Assets/HUD/Multiple Mode HUD/Shield/Shield CD/Player 3 DS Shield CD.png", 1920, 1080);
+				arena->p3d = FzlLoadSprite("Assets/HUD/Multiple Mode HUD/Dash/Dash CD/Player 3 DS Dash CD.png", 1920, 1080);
+				arena->p4s = FzlLoadSprite("Assets/HUD/Multiple Mode HUD/Shield/Shield CD/Player 4 DS Shield CD.png", 1920, 1080);
+				arena->p4d = FzlLoadSprite("Assets/HUD/Multiple Mode HUD/Dash/Dash CD/Player 4 DS Dash CD.png", 1920, 1080);
+				arena->mh2 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/2 Player Hearts.png", 1920, 1080);
+				arena->mh3 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/3 Player Hearts.png", 1920, 1080);
+				arena->mh4 = FzlLoadSprite("Assets/HUD/Heart_Mode/Multiple Mod Hearts/4 Player Hearts.png", 1920, 1080);
+				arena->p1elim = FzlLoadSprite("Assets/HUD/eliminated/Eliminated Everything/Player 1 Eliminated.png", 1920, 1080);
+				arena->p2elim = FzlLoadSprite("Assets/HUD/eliminated/Eliminated Everything/Player 2 Eliminated.png", 1920, 1080);
+				arena->p3elim = FzlLoadSprite("Assets/HUD/eliminated/Eliminated Everything/Player 3 Eliminated.png", 1920, 1080);
+				arena->p4elim = FzlLoadSprite("Assets/HUD/eliminated/Eliminated Everything/Player 4 Eliminated.png", 1920, 1080);
+			}
+		}
+	}
+}
+
+void timer(int& time, FzlSpriteHandle numbers)
+{
+	int ones = 0;
+	int tens = 0;
+	int hundreds = 0;
+	int posX = 870;
+
+	if (time > 0)
+	{
+
+		ones = time % 10;
+		if (time >= 10)
+		{
+			tens = (time - ones) / 10;
+			if (tens > 6)
+			{
+				hundreds = tens / 6;
+				for (int count = 0; count < hundreds; count++)
+					tens -= 6;
+			}
+		}
+		else
+			tens = 0;
+
+
+	}
+	FzlDrawAnimatedSprite(numbers, 0, hundreds, posX, 1035, 0);
+	FzlDrawAnimatedSprite(numbers, 0, 10, posX += 60, 1035, 0);
+	posX += 60;
+
+	FzlDrawAnimatedSprite(numbers, 0, tens, posX, 1035, 0);
+	FzlDrawAnimatedSprite(numbers, 0, ones, posX += 60, 1035, 0);
+
+}
+
+Menu::~Menu()
+{
+	FzlDeleteSprite(arena->p1elim);
+	FzlDeleteSprite(arena->p2elim);
+	FzlDeleteSprite(arena->p3elim);
+	FzlDeleteSprite(arena->p4elim);
+	FzlDeleteSprite(GUI);
+
+	FzlDeleteSprite(arena->p1s);
+	FzlDeleteSprite(arena->p2s);
+	FzlDeleteSprite(arena->p3s);
+	FzlDeleteSprite(arena->p4s);
+
+
+	FzlDeleteSprite(arena->p1d);
+	FzlDeleteSprite(arena->p2d);
+	FzlDeleteSprite(arena->p3d);
+	FzlDeleteSprite(arena->p4d);
+
+	FzlDeleteSprite(arena->p1);
+	FzlDeleteSprite(arena->p2);
+	FzlDeleteSprite(arena->p3);
+	FzlDeleteSprite(arena->p4);
+
+	FzlDeleteSprite(arena->p11);
+	FzlDeleteSprite(arena->p21);
+	FzlDeleteSprite(arena->p31);
+	FzlDeleteSprite(arena->p41);
+	FzlDeleteSprite(arena->p10);
+	FzlDeleteSprite(arena->p20);
+	FzlDeleteSprite(arena->p30);
+	FzlDeleteSprite(arena->p40);
+
+	FzlDeleteSprite(arena->mh2);
+	FzlDeleteSprite(arena->mh3);
+	FzlDeleteSprite(arena->mh4);
+
+}

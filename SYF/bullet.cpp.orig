@@ -1,0 +1,118 @@
+#include "Bullet.h"
+#include <math.h>
+#include "tank.h"
+#include <iostream>
+#define pi 3.1415926535
+Bullet::Bullet(double x, double y, double sAngle, int _velocity, int tankvelocityX, int tankvelocityY)
+{
+	posX = x;
+	posY = y;
+	//up
+	if (sAngle < 112.5 && sAngle > 67.5)
+	{
+		angle = 90;
+	}
+	//down
+	else if (sAngle > -112.5 && sAngle < -67.5)
+	{
+		angle = -90;
+	}
+	//right
+	else if (sAngle > -22.5 && sAngle < 22.5)
+	{
+		angle = 0;
+	}
+	//left
+	else if (sAngle > 157.5 || sAngle < -157.5)
+	{
+		angle = 180;
+	}
+	//up right
+	else if (sAngle > 22.5 && sAngle < 67.5)
+	{
+		angle = 45;
+	}
+	//down right
+	else if (sAngle > -67.5 && sAngle < -22.5)
+	{
+		angle = -45;
+	}
+	//up left
+	else if (sAngle > 112.5 && sAngle < 157.5)
+	{
+		angle = 135;
+	}
+	//down left
+	else if (sAngle > -157.5 && sAngle < -112.5)
+	{
+		angle = -135;
+	}
+	if (abs(angle) < 91)
+	{
+		velocity.sety((_velocity * sin(angle * pi / 180)) + tankvelocityY);
+		velocity.setx((_velocity * cos(angle * pi / 180)) + tankvelocityX);
+
+	}
+	else
+	{
+		velocity.setx(-1 * (_velocity * cos((180 - angle) * pi / 180)) + tankvelocityX);
+		velocity.sety((_velocity * sin((180 - angle) * pi / 180)) + tankvelocityY);
+	}
+	printf("bullet created \n");
+	
+}
+
+
+void Bullet::movement(FzlSpriteHandle shot, bool _x, bool _y)
+{
+	if (_y)
+	{
+		double velocityY = velocity.gety();
+		posY += velocityY;
+	}
+	else if (_x)
+	{
+		double velocityX = velocity.getx();
+		posX += velocityX;
+	}
+	//std::cout << FzlGetDeltaTime()<<std::endl;
+<<<<<<< local
+	
+	FzlDrawSprite(shot, static_cast<float>(posX), static_cast<float>(posY), angle);
+=======
+	posY += velocityY;
+	FzlDrawSpriteScaled(shot, static_cast<float>(posX), static_cast<float>(posY), angle, 1, 1);
+>>>>>>> other
+}
+
+void Bullet::redirect(double angle, int bulletSpeed)
+{
+	double velocityY = velocity.gety();
+	double velocityX = velocity.getx();
+	if (angle == 0)
+	{
+		velocity.sety(velocityY * -1);
+	}
+	else if (angle == 90)
+	{
+		velocity.setx(velocityX * -1);
+	}
+	//else dot product wall, need angled wall lines to go here
+}
+bool Bullet::age()
+{
+	if (lifespan > 1)
+	{
+		lifespan--;
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+Bullet::~Bullet()
+{
+	//printf("bullet deconstructed");
+}
